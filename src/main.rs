@@ -1,9 +1,9 @@
-use std::fs;
-
 use anyhow::{anyhow, Result};
 use clap::Parser;
+use colored::*;
 use exif::{DateTime, In, Tag, Value};
 use output_folder::OutputFolder;
+use std::fs;
 use walkdir::{DirEntry, WalkDir};
 
 mod output_folder;
@@ -16,6 +16,9 @@ struct Args {
 
     #[clap(short, long)]
     output: String,
+
+    #[clap(short, long)]
+    dry_run: bool,
 }
 
 fn is_not_hidden(entry: &DirEntry) -> bool {
@@ -26,18 +29,32 @@ fn is_not_hidden(entry: &DirEntry) -> bool {
         .unwrap_or(false)
 }
 
-fn move_file(entry: DirEntry, output_dir: &str) {
-    if let Ok(output_folder_date) = detect_date(&entry) {
-        let new_path = format!("{}/{}", output_dir, output_folder_date.get_path());
-        let new_file_path = format!("{}/{}", new_path, entry.file_name().to_str().unwrap());
+fn move_file(entry: DirEntry, output_dir: &str, dry_run: bool) {
+    let file_path = entry.path().to_str().unwrap();
 
-        fs::create_dir_all(&new_path).unwrap();
+    match detect_date(&entry) {
+        Ok(output_folder_date) => {
+            let new_path = format!("{}/{}", output_dir, output_folder_date.get_path());
+            let new_file_path = format!("{}/{}", new_path, entry.file_name().to_str().unwrap());
 
-        if let Ok(bytes_copied) = fs::copy(entry.path(), &new_file_path) {
-            if bytes_copied > 0 {
-                fs::remove_file(entry.path()).unwrap();
-                println!("{} -> {}", entry.path().to_str().unwrap(), &new_file_path);
+            if dry_run {
+                println!("Dry run: {} -> {}", file_path.red(), &new_file_path.green());
+
+                return;
             }
+
+            fs::create_dir_all(&new_path).unwrap();
+
+            if let Ok(bytes_copied) = fs::copy(entry.path(), &new_file_path) {
+                if bytes_copied > 0 {
+                    fs::remove_file(entry.path()).unwrap();
+
+                    println!("Moved {} -> {}", file_path.red(), &new_file_path.green());
+                }
+            }
+        }
+        Err(e) => {
+            println!("Error {}: {}. Not moved!", file_path, e);
         }
     }
 }
@@ -79,10 +96,11 @@ fn main() {
     println!("{:?}", args);
 
     let output_folder = args.output.clone();
+    let dry_run = args.dry_run.clone();
 
     WalkDir::new(args.input)
         .into_iter()
         .filter_entry(|e| is_not_hidden(e))
         .filter_map(|v| v.ok())
-        .for_each(|x| move_file(x, &output_folder));
+        .for_each(|x| move_file(x, &output_folder, dry_run));
 }

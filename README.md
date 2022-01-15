@@ -4,9 +4,10 @@ Jrnl (Journal) traverses file structures and reorganizes them into a journal str
 
 ```bash
 USAGE:
-    jrnl --input <INPUT> --output <OUTPUT>
+    jrnl [OPTIONS] --input <INPUT> --output <OUTPUT>
 
 OPTIONS:
+    -d, --dry-run
     -h, --help               Print help information
     -i, --input <INPUT>
     -o, --output <OUTPUT>

@@ -10,3 +10,4 @@ clap = { version = "3.0.6", features = ["derive"] }
 kamadak-exif = "0.5.4"
 walkdir = "2"
 anyhow = "1.0.52"
+colored = "2"
