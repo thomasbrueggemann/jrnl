@@ -1,6 +1,8 @@
 use anyhow::{anyhow, Result};
 use exif::{DateTime, In, Tag, Value};
-use std::{fs::File, io::BufReader};
+
+use std::io::BufReader;
+use std::path::Path;
 
 use crate::output_folder::OutputFolder;
 
@@ -9,8 +11,9 @@ use super::strategy::Strategy;
 pub struct ExifStrategy {}
 
 impl Strategy for ExifStrategy {
-    fn derive_output_folder(&self, file: &File) -> Result<OutputFolder> {
-        let mut bufreader = std::io::BufReader::new(file);
+    fn derive_output_folder(&self, path: &Path) -> Result<OutputFolder> {
+        let file = std::fs::File::open(path)?;
+        let mut bufreader = BufReader::new(file);
         let exifreader = exif::Reader::new();
         let exif = exifreader.read_from_container(&mut bufreader)?;
 

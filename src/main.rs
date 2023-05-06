@@ -3,7 +3,10 @@ use clap::Parser;
 use colored::*;
 use output_folder::OutputFolder;
 use std::{ffi::OsStr, fs};
-use strategies::{exif_strategy::ExifStrategy, mp4_strategy::Mp4Strategy, strategy::Strategy};
+use strategies::{
+    exif_strategy::ExifStrategy, filename_strategy::FilenameStrategy, mp4_strategy::Mp4Strategy,
+    strategy::Strategy,
+};
 use walkdir::{DirEntry, WalkDir};
 
 mod output_folder;
@@ -62,7 +65,6 @@ fn move_file(entry: DirEntry, output_dir: &str, dry_run: bool) {
 
 fn derive_output_folder(entry: &DirEntry) -> Result<OutputFolder> {
     let path = entry.path();
-    let file = std::fs::File::open(path)?;
 
     if !path.is_file() {
         return Err(anyhow!(
@@ -77,15 +79,20 @@ fn derive_output_folder(entry: &DirEntry) -> Result<OutputFolder> {
         .unwrap()
         .to_lowercase();
 
-    match file_type.as_str() {
+    let output_folder = match file_type.as_str() {
         "jpg" | "jpeg" | "png" | "tif" | "tiff" | "dng" => {
-            ExifStrategy {}.derive_output_folder(&file)
+            ExifStrategy {}.derive_output_folder(&path)
         }
-        "mp4" | "mov" => Mp4Strategy {}.derive_output_folder(&file),
+        //"mp4" | "mov" => Mp4Strategy {}.derive_output_folder(&file),
         _ => Err(anyhow!(
             "No strategy found for extension {}",
             file_type.clone()
         )),
+    };
+
+    match output_folder {
+        Ok(folder) => Ok(folder),
+        Err(e) => FilenameStrategy {}.derive_output_folder(&path),
     }
 }
 
