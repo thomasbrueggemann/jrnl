@@ -13,7 +13,7 @@ pub struct FilenameStrategy {}
 impl Strategy for FilenameStrategy {
     fn derive_output_folder(&self, path: &Path) -> Result<OutputFolder> {
         lazy_static! {
-            static ref RE: Regex = Regex::new(r"_(\d{4})(\d{2})(\d{2})_").unwrap();
+            static ref RE: Regex = Regex::new(r"(\d{4})(\d{2})(\d{2})[_-]").unwrap();
         }
 
         let current_year = chrono::Utc::now().year();
